@@ -1,0 +1,63 @@
+<!-- snake.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aslee's Snake Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Titel und Spielüberschrift -->
+  <h1>Aslee's Snake Game</h1>
+  <!-- Anzeigebereich für Punktzahl und Bestleistung -->
+  <div id="scoreboard">
+    Score: <span id="score">0</span> 
+    Highscore: <span id="highscore">0</span>
+  </div>
+  <!-- Spielfeld: Canvas für das Spiel, mit weißem Rahmen -->
+  <canvas id="game-canvas" width="320" height="320"></canvas>
+  <!-- Steuerungs-Buttons (Pfeile) unter dem Spielfeld -->
+  <div class="controls">
+    <div></div>
+    <button class="arrow-btn" id="btn-up">↑</button>
+    <div></div>
+    <button class="arrow-btn" id="btn-left">←</button>
+    <button class="arrow-btn" id="btn-down">↓</button>
+    <button class="arrow-btn" id="btn-right">→</button>
+  </div>
+  <!-- Startbildschirm Overlay -->
+  <div id="start-screen">
+    <button id="start-button" class="menu-btn">Start</button>
+  </div>
+  <!-- Konfigurationsbildschirm Overlay (Farbauswahl, Wandmodus) -->
+  <div id="config-screen">
+    <div class="config-option">
+      <label for="color-select">Snake-Farbe:</label>
+      <select id="color-select">
+        <option value="green">Grün</option>
+        <option value="blue">Blau</option>
+        <option value="yellow">Gelb</option>
+        <option value="violet">Violett</option>
+        <option value="purple">Lila</option>
+        <option value="pink">Pink</option>
+        <option value="brown">Braun</option>
+        <option value="red">Rot</option>
+        <option value="orange">Orange</option>
+        <option value="white">Weiß</option>
+      </select>
+    </div>
+    <div class="config-option">
+      <label for="wall-select">Wandmodus:</label>
+      <select id="wall-select">
+        <option value="deadly">Wandkontakt tödlich</option>
+        <option value="wrap">Wrap-Around (durch Wände)</option>
+      </select>
+    </div>
+    <button id="play-button" class="menu-btn">Spiel Starten</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
+
+
