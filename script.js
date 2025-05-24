@@ -172,7 +172,7 @@
       placeApple();
       // Automatische Geschwindigkeitssteigerung (alle 5 Äpfel)
       if (autoSpeedCheckbox.checked && appleCounter % 2 === 0) {
-        moveInterval = Math.max(moveInterval - 20, 50);
+        moveInterval = Math.max(70, moveInterval - 20, 50);
       }
       // Nicht das Schwanzende entfernen (Schlange wächst)
     } else {
