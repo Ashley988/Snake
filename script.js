@@ -179,6 +179,8 @@
       // Nicht gegessen -> letztes Segment entfernen
       snake.pop();
     }
+
+    gameLoop();
     // Spiel auf Canvas zeichnen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Schlange zeichnen
