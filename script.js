@@ -171,16 +171,14 @@
       // Neuen Apfel platzieren
       placeApple();
       // Automatische Geschwindigkeitssteigerung (alle 5 Äpfel)
-      if (autoSpeedCheckbox.checked && appleCounter % 2 === 0) {
-        moveInterval = Math.max(70, moveInterval - 20, 50);
+      if (autoSpeedCheckbox.checked && appleCounter % 5 === 0) {
+        moveInterval = Math.max(moveInterval - 10, 50);
       }
       // Nicht das Schwanzende entfernen (Schlange wächst)
     } else {
       // Nicht gegessen -> letztes Segment entfernen
       snake.pop();
     }
-
-  
     // Spiel auf Canvas zeichnen
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Schlange zeichnen
@@ -233,6 +231,6 @@
   }
   // Loop starten
   lastMoveTime = Date.now();
-  
+  gameLoop();
 
 })();
