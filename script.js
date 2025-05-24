@@ -1,8 +1,9 @@
 // snake.js
-(function () {
+(function() {
   // Canvas und Kontext
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
+
   // Spielzustand-Variablen
   let snake = [];
   let snakeDir = { x: 0, y: 0 };
@@ -10,11 +11,15 @@
   let apple = null;
   let score = 0;
   let highscore = 0;
-  let gameInterval = null;
-  let gridSize = 20; // Größe eines Segments (Pixel)
+  let gridSize = 20;
   let cols = canvas.width / gridSize;
   let rows = canvas.height / gridSize;
-  let wallMode = 'deadly';
+  let wallMode = 'deadly'; 
+  let gameActive = false;
+  let lastMoveTime = 0;
+  let moveInterval = 150;
+  let appleCounter = 0;
+
   // DOM-Elemente
   const scoreSpan = document.getElementById('score');
   const highscoreSpan = document.getElementById('highscore');
@@ -28,29 +33,36 @@
   const btnDown = document.getElementById('btn-down');
   const btnLeft = document.getElementById('btn-left');
   const btnRight = document.getElementById('btn-right');
+  const speedSelect = document.getElementById('speed-select');
+  const autoSpeedCheckbox = document.getElementById('auto-speed');
+
   // Highscore aus localStorage laden (falls vorhanden)
   if (localStorage.getItem('snakeHighscore')) {
     highscore = parseInt(localStorage.getItem('snakeHighscore'), 10);
-    if (isNaN(highscore)) highscore = 0;
+    if (isNaN(highscore)) {
+      highscore = 0;
+    }
+    highscoreSpan.textContent = highscore;
   }
-  highscoreSpan.textContent = highscore;
-  // Startbildschirm anzeigen, Konfigurationsbildschirm und Hauptspiel-Elemente ausblenden
+
+  // Startbildschirm anzeigen (Hauptmenü)
   function showStartScreen() {
+    // Canvas leeren
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     startScreen.style.display = 'flex';
     configScreen.style.display = 'none';
-    // Pause eventuelle laufende Spielschleife
-    if (gameInterval) {
-      clearInterval(gameInterval);
-    }
+    gameActive = false;
   }
-  // Konfigurationsbildschirm für Farbauswahl und Wandmodus anzeigen
+
+  // Konfigurationsbildschirm anzeigen
   function showConfigScreen() {
     startScreen.style.display = 'none';
     configScreen.style.display = 'flex';
   }
-  // Overlays ausblenden und das Spiel starten
+
+  // Spiel starten (bei Klick auf Play)
   function startGame() {
-    // Ausgewählte Farbe und Wandmodus abrufen
+    // ausgewählte Farbe und Wandmodus abrufen
     snakeColor = colorSelect.value;
     wallMode = wallSelect.value;
     // Spielzustand initialisieren
@@ -61,132 +73,164 @@
     const startX = Math.floor(cols / 2);
     const startY = Math.floor(rows / 2);
     snake.push({ x: startX, y: startY });
-    // Anfangsrichtung neutral setzen (Schlange bleibt stehen bis erste Eingabe)
+    // Anfangsrichtung neutral (Schlange steht bis erste Eingabe)
     snakeDir = { x: 0, y: 0 };
     // Ersten Apfel platzieren
     placeApple();
     // Konfigurations-Overlay ausblenden
     configScreen.style.display = 'none';
-    // Spielschleife starten
-    const speed = 100;
-    gameInterval = setInterval(updateGame, speed);
+    // Geschwindigkeit festlegen
+    if (autoSpeedCheckbox.checked) {
+      moveInterval = 250;
+    } else {
+      moveInterval = parseInt(speedSelect.value, 10);
+      if (isNaN(moveInterval)) {
+        // Wenn die Optionstexte keine Zahlen sind, hier ein Beispiel-Mapping:
+        const sel = speedSelect.value;
+        if (sel === 'Sehr langsam' || sel === '250') moveInterval = 250;
+        else if (sel === 'Langsam' || sel === '200') moveInterval = 200;
+        else if (sel === 'Normal' || sel === '150') moveInterval = 150;
+        else if (sel === 'Schnell' || sel === '100') moveInterval = 100;
+        else if (sel === 'Sehr schnell' || sel === '50') moveInterval = 50;
+        else moveInterval = 150;
+      }
+    }
+    appleCounter = 0;
+    gameActive = true;
+    lastMoveTime = Date.now();
+    console.log("Spiel gestartet mit Intervall: " + moveInterval);
   }
-  // Apfel an einer zufälligen Position platzieren, die nicht von der Schlange belegt ist
+
+  // Apfel an einer zufälligen, freien Position platzieren
   function placeApple() {
     let valid = false;
     let newApple = { x: 0, y: 0 };
     while (!valid) {
       newApple.x = Math.floor(Math.random() * cols);
       newApple.y = Math.floor(Math.random() * rows);
-      // Stelle sicher, dass der Apfel nicht auf der Schlange liegt
+      // sicherstellen, dass der Apfel nicht auf der Schlange liegt
       valid = !snake.some(segment => segment.x === newApple.x && segment.y === newApple.y);
     }
     apple = newApple;
   }
-  // Richtungsänderung aufgrund von Eingabe (Pfeiltasten oder Buttons)
+
+  // Richtung setzen (Pfeiltasten oder Buttons). Verhindert direkte Umkehr
   function setDirection(dx, dy) {
-    // Umkehr der Richtung verhindern, wenn die Schlange länger als 1 ist
     if (snake.length > 1) {
       const nextX = snake[0].x + dx;
       const nextY = snake[0].y + dy;
-      // Die gewünschte Richtung führt direkt zurück in das zweite Segment -> ignorieren
+      // Wenn die gewünschte Richtung direkt zurück ins 2. Segment führt, ignorieren
       if (snake[1].x === nextX && snake[1].y === nextY) {
         return;
       }
     }
     snakeDir = { x: dx, y: dy };
   }
-  // Aktualisiere den Spielzustand in jedem Tick
+
+  // Spielzustand in jedem Tick aktualisieren
   function updateGame() {
-    if (!snakeDir.x && !snakeDir.y) {
-      // Schlange bewegt sich noch nicht, bis eine Richtung gesetzt wird
-      drawGame();
+    if (!gameActive) return;
+    // Falls noch keine Richtung (Schlange steht zu Beginn), nichts tun
+    if (snakeDir.x === 0 && snakeDir.y === 0) {
       return;
     }
     // Neue Kopfposition berechnen
-    let headX = snake[0].x + snakeDir.x;
-    let headY = snake[0].y + snakeDir.y;
-    // Wand-Kollision oder -Durchlauf behandeln
+    let newHead = { x: snake[0].x + snakeDir.x, y: snake[0].y + snakeDir.y };
+    // Wandmodus berücksichtigen
     if (wallMode === 'deadly') {
-      if (headX < 0 || headX >= cols || headY < 0 || headY >= rows) {
+      // Bei Wandkontakt Spiel beenden
+      if (newHead.x < 0 || newHead.x >= cols || newHead.y < 0 || newHead.y >= rows) {
         gameOver();
         return;
       }
-    } else if (wallMode === 'wrap') {
-      // An gegenüberliegender Seite wieder auftauchen (Wrap-Around)
-      if (headX < 0) headX = cols - 1;
-      else if (headX >= cols) headX = 0;
-      if (headY < 0) headY = rows - 1;
-      else if (headY >= rows) headY = 0;
+    } else {
+      // Durchlässiger Rand: Umbruch an gegenüberliegendem Rand
+      if (newHead.x < 0) newHead.x = cols - 1;
+      if (newHead.x >= cols) newHead.x = 0;
+      if (newHead.y < 0) newHead.y = rows - 1;
+      if (newHead.y >= rows) newHead.y = 0;
     }
-    const newHead = { x: headX, y: headY };
-    // Prüfen, ob ein Apfel gegessen wird
-    const eatingApple = apple && newHead.x === apple.x && newHead.y === apple.y;
-    // Schwanz entfernen, wenn kein Apfel gegessen wird (Schlange bewegt sich ohne Wachstum)
-    if (!eatingApple) {
-      snake.pop();
-    }
-    // Prüfen auf Kollision mit sich selbst nach potentieller Bewegung
+    // Selbst-Kollision überprüfen
     if (snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
       gameOver();
       return;
     }
-    // Neuen Kopf zur Schlange hinzufügen
+    // Kopf am Anfang des Arrays hinzufügen
     snake.unshift(newHead);
-    // Wenn Apfel gegessen, Score erhöhen und neuen Apfel platzieren
-    if (eatingApple) {
+    // Apfel gegessen?
+    if (apple && newHead.x === apple.x && newHead.y === apple.y) {
       score++;
       scoreSpan.textContent = score;
-      placeApple();
-      // Highscore aktualisieren, falls überschritten
+      appleCounter++;
+      // Highscore aktualisieren
       if (score > highscore) {
         highscore = score;
-        highscoreSpan.textContent = highscore;
         localStorage.setItem('snakeHighscore', highscore);
+        highscoreSpan.textContent = highscore;
       }
+      // Neuen Apfel platzieren
+      placeApple();
+      // Automatische Geschwindigkeitssteigerung (alle 5 Äpfel)
+      if (autoSpeedCheckbox.checked && appleCounter % 5 === 0) {
+        moveInterval = Math.max(moveInterval - 10, 50);
+      }
+      // Nicht das Schwanzende entfernen (Schlange wächst)
+    } else {
+      // Nicht gegessen -> letztes Segment entfernen
+      snake.pop();
     }
-    // Alles neu zeichnen
-    drawGame();
-  }
-  // Zeichnet Schlange, Apfel und Hintergrund
-  function drawGame() {
-    // Canvas leeren (schwarz füllen)
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Spiel auf Canvas zeichnen
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Schlange zeichnen
     ctx.fillStyle = snakeColor;
     snake.forEach(segment => {
       ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
     });
-    // Apfel zeichnen
+    // Apfel zeichnen (rot)
     if (apple) {
       ctx.fillStyle = 'red';
       ctx.fillRect(apple.x * gridSize, apple.y * gridSize, gridSize, gridSize);
     }
   }
-  // Behandelt Game Over
+
+  // Spiel beenden
   function gameOver() {
-    clearInterval(gameInterval);
     alert('Game Over! Punkte: ' + score);
-    // Startbildschirm erneut anzeigen (Neustart ermöglichen)
+    gameActive = false;
     showStartScreen();
   }
-  // Event Listener für Steuerung
-  // Pfeiltasten (für Desktop-Nutzung)
+
+  // Steuerung per Tastatur (Pfeiltasten)
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowUp') setDirection(0, -1);
     else if (e.key === 'ArrowDown') setDirection(0, 1);
     else if (e.key === 'ArrowLeft') setDirection(-1, 0);
     else if (e.key === 'ArrowRight') setDirection(1, 0);
   });
-  // Button-Steuerung für mobile Geräte
+  // Steuerung per Buttons (für Mobile)
   btnUp.addEventListener('click', () => setDirection(0, -1));
   btnDown.addEventListener('click', () => setDirection(0, 1));
   btnLeft.addEventListener('click', () => setDirection(-1, 0));
   btnRight.addEventListener('click', () => setDirection(1, 0));
-  // Logik für Start- und Spiel-Buttons
+
+  // Buttons für Start und Spiel
   startButton.addEventListener('click', showConfigScreen);
   playButton.addEventListener('click', startGame);
+
   // Initialer Aufruf: Startbildschirm anzeigen
   showStartScreen();
+
+  // Game-Loop mit requestAnimationFrame
+  function gameLoop() {
+    requestAnimationFrame(gameLoop);
+    const now = Date.now();
+    if (now - lastMoveTime >= moveInterval) {
+      updateGame();
+      lastMoveTime = now;
+    }
+  }
+  // Loop starten
+  lastMoveTime = Date.now();
+  gameLoop();
+
 })();
