@@ -1,3 +1,4 @@
+
 <!-- snake.html -->
 <!DOCTYPE html>
 <html lang="de">
@@ -54,10 +55,23 @@
         <option value="wrap">Wrap-Around (durch Wände)</option>
       </select>
     </div>
+<div class="config-option">
+  <label for="speed-select">Geschwindigkeit:</label>
+  <select id="speed-select">
+    <option value="250">Sehr langsam</option>
+    <option value="200">Langsam</option>
+    <option value="150" selected>Normal</option>
+    <option value="100">Schnell</option>
+    <option value="50">Sehr schnell</option>
+    <option value="25">Extrem schnell</option>
+  </select>
+</div>
+
+<div class="config-option">
+  <label><input type="checkbox" id="auto-speed"> Geschwindigkeit automatisch steigern</label>
+</div>
     <button id="play-button" class="menu-btn">Spiel Starten</button>
   </div>
   <script src="script.js"></script>
 </body>
 </html>
-
-
