@@ -231,6 +231,6 @@
   }
   // Loop starten
   lastMoveTime = Date.now();
-  gameLoop();
+  
 
 })();
